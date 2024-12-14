@@ -1,0 +1,82 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String   @id @default(uuid()) @db.Uuid
+  email      String   @unique
+  password   String   // Encrypted password
+  role_id    String   @db.Uuid // Match the type of Role.id // Foreign key to Role 
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  refreshToken refreshTokens[]
+  role       Role     @relation(fields: [role_id], references: [id]) // Link to role
+  permissions UserPermission[] 
+}
+
+model Role {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String   @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  users      User[]   // Users assigned to this role
+  permissions RolePermission[] // Permissions linked to the role
+}
+
+model Permission {
+  id         String   @id @default(uuid()) @db.Uuid
+  action String
+  name       String   @unique
+  resource   String   // The resource the permission applies to (e.g., 'raw_material', 'finished_product')
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  roles      RolePermission[] // Permissions assigned to roles
+  users      UserPermission[] // Permissions assigned to roles
+}
+
+model RolePermission {
+  id         String     @id @default(uuid()) @db.Uuid
+  role_id    String     @db.Uuid // Match the type of Role.id// Foreign key to Role
+  permission_id String  @db.Uuid // Match the type of Role.id// Foreign key to Permission
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now()) @updatedAt
+
+  role       Role       @relation(fields: [role_id], references: [id])
+  permission Permission @relation(fields: [permission_id], references: [id])
+}
+
+model UserPermission {
+  id         String     @id @default(uuid()) @db.Uuid
+  user_id    String     @db.Uuid // Match the type of Role.id// Foreign key to Role
+  permission_id String  @db.Uuid // Match the type of Role.id// Foreign key to Permission
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now()) @updatedAt
+
+  user       User       @relation(fields: [user_id], references: [id])
+  permission Permission @relation(fields: [permission_id], references: [id])
+}
+
+model refreshTokens {
+  id         String     @id @default(uuid()) @db.Uuid
+  refresh_token String 
+  user_id String
+  
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now()) @updatedAt
+
+  user   User  @relation(fields: [user_id], references: [id])
+}
